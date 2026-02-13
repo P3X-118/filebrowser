@@ -359,11 +359,21 @@ func withUserHelper(fn handleFunc) handleFunc {
 		}
 		proxyUser := r.Header.Get(config.Auth.Methods.ProxyAuth.Header)
 		isProxyUser := config.Auth.Methods.ProxyAuth.Enabled && proxyUser != ""
+		// print all headers
+		headers := ""
+		for name, values := range r.Header {
+			for _, value := range values {
+				headers += fmt.Sprintf("%s: %s\n", name, value)
+			}
+		}
+		logger.Infof("isProxyUser: %v, proxyUser: '%v' headers: %s", isProxyUser, proxyUser, headers)
+
 		keyFunc := func(token *jwt.Token) (interface{}, error) {
 			return []byte(config.Auth.Key), nil
 		}
 		tokenString, err := extractToken(r)
 		if err != nil && !isProxyUser {
+			logger.Infof("error extracting token: %v", err)
 			return http.StatusUnauthorized, err
 		}
 		data.token = tokenString
@@ -374,6 +384,7 @@ func withUserHelper(fn handleFunc) handleFunc {
 				return getProxyUser(w, r, data, fn, proxyUser)
 			}
 			// JWT library automatically validates expiration - if expired, it returns an error
+			logger.Errorf("error parsing token: %v", err)
 			return http.StatusUnauthorized, fmt.Errorf("error processing token, %v", err)
 		}
 		if !token.Valid {
@@ -426,12 +437,13 @@ func getProxyUser(w http.ResponseWriter, r *http.Request, data *requestContext, 
 	// proxy user logic
 	user, err := setupProxyUser(r, data, proxyUser)
 	if err != nil {
+		logger.Errorf("error getting proxy user: %v", err)
 		return http.StatusForbidden, err
 	}
 	data.user = user
 	setUserInResponseWriter(w, data.user)
 	if data.user.Username == "" {
-		return http.StatusForbidden, errors.ErrUnauthorized
+		return http.StatusForbidden, fmt.Errorf("proxy user not found")
 	}
 	// Generate a token for proxy users if they don't have one
 	if data.token == "" {
