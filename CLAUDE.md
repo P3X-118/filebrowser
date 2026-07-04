@@ -67,7 +67,8 @@ make build-docker-slim    # minimal image, no ffmpeg/mupdf
 |---|---|---|
 | App source + image builds | this repo | active |
 | Sister role `filebrowser_quantum` | `~/sgc/ansible/roles/filebrowser-quantum-ar` (= `P3X-118/filebrowser-quantum-ar`, on `sgc-dev`) | released: `v1.0.3-2` on `sgc` |
-| Master playbook wiring | `~/sgc/SGC` (`requirements.yml` ~line 264, `setup.yml` ~line 520, `group_vars/mash_servers` ~line 5505, `docs/services/filebrowser-quantum.md`) | points at the P3X-118 role `v1.0.3-2`, but still commented out / `enabled: false` until activation |
+| Master playbook wiring | `~/sgc/SGC` (`requirements.yml`, `setup.yml`, `group_vars/mash_servers`, `docs/services/filebrowser-quantum.md`) | ACTIVE — role fetched at `v1.0.3-2` |
+| Live deployment | `files.primebaseball.pro` on host `primebaseball.pro` (host_vars there are the reference integration) | deployed `1.5.0-0` (image `p3x-118/filebrowser:1.5.0-0`, controller-built + docker-loaded) |
 
 The role runs the image docker-in-systemd (MASH pattern, var prefix `filebrowser_quantum_`): read-only container, `--cap-drop=ALL`, `--user uid:gid`; mounts `<base>/cache → /home/filebrowser/cache`, `<base>/data → /home/filebrowser/data`, `<base>/files → /folder` (the single source); config rendered to `data/config.yaml`; **secrets (admin password, OIDC client secret, office JWT) go via the env file only, never the config file**. Config keys without dedicated role vars are set through `filebrowser_quantum_configuration_extension_yaml` (deep-merged into the rendered config). SGC's group_vars auto-wire Traefik labels and ONLYOFFICE integration when those services are enabled.
 
@@ -77,32 +78,15 @@ The role runs the image docker-in-systemd (MASH pattern, var prefix `filebrowser
 
 **Remaining upstream references (deliberate):** the role's *pull-path* default stays `ghcr.io/gtsteffaniak/filebrowser` as a generic fallback (we deploy via self-build), and `_docker/Dockerfile` pulls the `gtstef/ffmpeg` base image from Docker Hub at build time. Role releases: tag on the role's `sgc` branch; the tag string must match the SGC `requirements.yml` `version:` exactly (`v1.0.3-2` style, `v`-prefixed — note this differs from this repo's bare app tags).
 
-**Activating in SGC** (from `~/sgc/SGC`): uncomment the `filebrowser_quantum` blocks in `requirements.yml` + `setup.yml` → `just roles` → set host vars (below) → `just install-service filebrowser-quantum --limit <facility-host>`.
+**Releasing a new version to the facility**: merge `sgc-dev` → `sgc`, tag bare `X.Y.Z-N`, push; `docker build --build-arg VERSION=<tag> --build-arg REVISION=<sha> -t p3x-118/filebrowser:<tag> -f _docker/Dockerfile .` on the controller; `docker save p3x-118/filebrowser:<tag> | gzip | ssh ubuntu@98.95.5.180 'gunzip | sudo docker load'`; bump `filebrowser_quantum_version` in the host vars; `just install-service filebrowser-quantum --limit primebaseball.pro` (from `~/sgc/SGC`).
 
 ## Deployment target: primeBaseball
 
-This system is dedicated to the primeBaseball project (`~/b2b/primeBaseball`), hosted in Market Reactor's dedicated AWS VPC. **`files.primebaseball.pro` is reachable only over the VPN mesh and from the facility IP** — never publicly exposed. primeBaseball facilities deploy as SGC inventory host-aliases (`just install-service <service> --limit <facility-host>`; see the primeBaseball CLAUDE.md for the host-alias pattern).
+This system is dedicated to the primeBaseball project (`~/b2b/primeBaseball`), deployed on the consolidated `primebaseball.pro` host (t3.xlarge in Market Reactor's dedicated AWS VPC, EIP 98.95.5.180 / private 10.20.5.176). **The complete, live integration is the `filebrowser_quantum` block in `~/sgc/SGC/inventory/host_vars/primebaseball.pro/vars.yml`** — treat it as the reference. Key facts:
 
-**Authentik is the IdP source of truth.** Users, groups, and permissions are managed in Authentik (an active SGC service, `P3X-118/ansible-role-authentik`) and flow into filebrowser via OIDC — do not create or manage local filebrowser users. The playbook has no OIDC-client automation: create the OAuth2/OIDC provider + application in Authentik manually, then wire host vars:
-
-```yaml
-filebrowser_quantum_config_auth_methods_oidc: true
-filebrowser_quantum_config_auth_methods_oidc_clientid: "<from authentik>"
-filebrowser_quantum_environment_variables_filebrowser_oidc_client_secret: "<from authentik>"
-filebrowser_quantum_config_auth_methods_oidc_issuerurl: "https://<authentik-host>/application/o/<app-slug>/"
-# scopes ("email openid profile groups"), userIdentifier (preferred_username),
-# and createUser (true) role defaults are already correct for authentik.
-
-# Keys without dedicated role vars — deep-merged into config.yaml:
-filebrowser_quantum_configuration_extension_yaml: |
-  auth:
-    methods:
-      password:
-        enabled: false        # authentik-only login
-      oidc:
-        adminGroup: "<authentik group granting filebrowser admin>"
-        userGroups: ["<authentik groups allowed to log in>"]
-filebrowser_quantum_environment_variables_filebrowser_admin_password_enabled: false
-```
-
-Group-based directory permissions are then managed as filebrowser path ACLs referencing the Authentik group names — group membership itself always comes from Authentik (re-synced on every login).
+- **Network gate**: public DNS → the EIP with a real DNS-01 LE cert, but the Traefik router carries an `ipallowlist` (`169.254.41.0/24` stargate mesh + `10.20.5.0/24` AWS subnet + facility IP `47.234.227.91/32`) as the sole network gate — everything else gets a 403 before the app. Same pattern as `do.` on that host.
+- **Authentik is the IdP source of truth** — the dedicated `auth.primebaseball.pro` instance (not the shared SSO mesh). Login is OIDC-only (password method disabled), `client_id=filebrowser`, issuer `https://auth.primebaseball.pro/application/o/filebrowser/`. `prime-admins` → filebrowser admin, re-synced every login; all Authentik group names sync into filebrowser ACL groups (`SyncUserGroups`) for path-level permissions. Do not create or manage local filebrowser users.
+- The OIDC client secret derives from the host's `sgc_pgsk` (salt `filebrowser.oidc`) on BOTH sides: the host vars env var, and `FILEBROWSER_OIDC_SECRET` in `~/b2b/primeBaseball/.secrets/filebrowser-oidc.env` fed to the provisioner.
+- **Authentik provisioning is scripted**: `~/sgc/apps/authentik/scripts/sgc/provision-filebrowser.py` (run via `run-provision.sh` conventions against `prime-authentik-server`; re-runnable, secret optional on re-runs). Redirect URI is fixed by the app: `https://files.primebaseball.pro/api/auth/oidc/callback`.
+- Server-side OIDC calls pin `auth.primebaseball.pro` to the local Traefik via `--add-host=...:10.20.5.176` (the box can't hairpin its own EIP); browser redirects use public DNS.
+- Facility files live at `/prime/prime-filebrowser-quantum/files` on the host, mounted at `/folder` in the container (the single filebrowser source).
