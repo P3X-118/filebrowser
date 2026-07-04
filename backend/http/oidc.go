@@ -347,6 +347,17 @@ func loginWithOidcUser(w http.ResponseWriter, r *http.Request, username string, 
 			logger.Debugf("User %s is in admin group %s, granting admin privileges.", username, oidcCfg.AdminGroup)
 		}
 	}
+	// Group-mapped permissions: when configured, permissions are recomputed from
+	// userDefaults plus the grants of the user's groups on every login, so
+	// permission management lives with the identity provider.
+	groupPermsConfigured := len(oidcCfg.GroupPermissions) > 0
+	var groupPerms users.Permissions
+	if groupPermsConfigured {
+		groupPerms = settings.PermissionsFromGroups(settings.EffectiveDefaultPermissions(), oidcCfg.GroupPermissions, groups)
+		if isAdmin {
+			groupPerms.Admin = true
+		}
+	}
 	logger.Debugf("Successfully authenticated OIDC username: %s isAdmin: %v", username, isAdmin)
 	// Retrieve the user from the store and store it in the context
 	user, err := store.Users.Get(username)
@@ -366,6 +377,9 @@ func loginWithOidcUser(w http.ResponseWriter, r *http.Request, username string, 
 		if isAdmin {
 			user.Permissions.Admin = true
 		}
+		if groupPermsConfigured {
+			user.Permissions = groupPerms
+		}
 		err = storage.CreateUser(*user, user.Permissions)
 		if err != nil {
 			return http.StatusInternalServerError, err
@@ -375,8 +389,16 @@ func loginWithOidcUser(w http.ResponseWriter, r *http.Request, username string, 
 			return http.StatusInternalServerError, err
 		}
 	} else {
-		// update user admin perms
-		if isAdmin != user.Permissions.Admin && oidcCfg.AdminGroup != "" {
+		// re-sync permissions from the identity provider's groups / admin group
+		if groupPermsConfigured {
+			if user.Permissions != groupPerms {
+				user.Permissions = groupPerms
+				err = store.Users.Update(user, true, "Permissions")
+				if err != nil {
+					logger.Warningf("failed to update oidc user %s group-mapped permissions: %v", username, err)
+				}
+			}
+		} else if isAdmin != user.Permissions.Admin && oidcCfg.AdminGroup != "" {
 			user.Permissions.Admin = isAdmin
 			err = store.Users.Update(user, true, "Permissions")
 			if err != nil {

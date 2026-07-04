@@ -5876,6 +5876,13 @@ const docTemplate = `{
                     "description": "whether to enable this authentication method.",
                     "type": "boolean"
                 },
+                "groupPermissions": {
+                    "description": "if set, permissions are recomputed on every login as userDefaults plus the grants of the user's groups, so permission management lives with the identity provider.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/users.Permissions"
+                    }
+                },
                 "groupsClaim": {
                     "description": "the JSON field name to read groups from. Default is \"groups\"",
                     "type": "string"
@@ -5927,6 +5934,13 @@ const docTemplate = `{
                 "enabled": {
                     "description": "whether to enable this authentication method.",
                     "type": "boolean"
+                },
+                "groupPermissions": {
+                    "description": "if set, permissions are recomputed on every login as userDefaults plus the grants of the user's groups, so permission management lives with the identity provider.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/users.Permissions"
+                    }
                 },
                 "groupsClaim": {
                     "description": "the JSON field name to read groups from. Default is \"groups\"",
@@ -6081,6 +6095,13 @@ const docTemplate = `{
                     "description": "whether to enable this authentication method.",
                     "type": "boolean"
                 },
+                "groupPermissions": {
+                    "description": "if set, permissions are recomputed on every login as userDefaults plus the grants of the user's groups, so permission management lives with the identity provider.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/users.Permissions"
+                    }
+                },
                 "groupsClaim": {
                     "description": "the JSON field name to read groups from. Default is \"groups\"",
                     "type": "string"
@@ -6209,6 +6230,13 @@ const docTemplate = `{
                 "enabled": {
                     "description": "whether to enable this authentication method.",
                     "type": "boolean"
+                },
+                "groupPermissions": {
+                    "description": "if set, permissions are recomputed on every login as userDefaults plus the grants of the user's groups, so permission management lives with the identity provider.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/users.Permissions"
+                    }
                 },
                 "groupsClaim": {
                     "description": "the JSON field name to read groups from. Default is \"groups\"",

@@ -69,6 +69,7 @@ auth:
       enabled: false                      # whether to enable this authentication method.
       adminGroup: ""                      # if set, users in this group will be granted admin privileges
       userGroups:                         # if set, only users in these groups are allowed to log in. Blocks all other users even with valid credentials.
+      groupPermissions: ""                # if set, permissions are recomputed on every login as userDefaults plus the grants of the user's groups, so permission management lives with the identity provider.
       groupsClaim: ""                     # the JSON field name to read groups from. Default is "groups"
       userIdentifier: ""                  # the field value to use as the username. Default is "preferred_username" in oidc, "sub" in jwt. Other common values are "email" or "username", or "phone"
       disableVerifyTLS: false             # disable TLS verification (insecure, for testing only)
@@ -88,6 +89,7 @@ auth:
       enabled: false                      # whether to enable this authentication method.
       adminGroup: ""                      # if set, users in this group will be granted admin privileges
       userGroups:                         # if set, only users in these groups are allowed to log in. Blocks all other users even with valid credentials.
+      groupPermissions: ""                # if set, permissions are recomputed on every login as userDefaults plus the grants of the user's groups, so permission management lives with the identity provider.
       groupsClaim: "groups"               # the JSON field name to read groups from. Default is "groups"
       userIdentifier: "preferred_username" # the field value to use as the username. Default is "preferred_username" in oidc, "sub" in jwt. Other common values are "email" or "username", or "phone"
       disableVerifyTLS: false             # disable TLS verification (insecure, for testing only)
@@ -100,6 +102,7 @@ auth:
       enabled: false                      # whether to enable this authentication method.
       adminGroup: ""                      # if set, users in this group will be granted admin privileges
       userGroups:                         # if set, only users in these groups are allowed to log in. Blocks all other users even with valid credentials.
+      groupPermissions: ""                # if set, permissions are recomputed on every login as userDefaults plus the grants of the user's groups, so permission management lives with the identity provider.
       groupsClaim: ""                     # the JSON field name to read groups from. Default is "groups"
       userIdentifier: ""                  # the field value to use as the username. Default is "preferred_username" in oidc, "sub" in jwt. Other common values are "email" or "username", or "phone"
       disableVerifyTLS: false             # disable TLS verification (insecure, for testing only)
@@ -113,6 +116,7 @@ auth:
       enabled: false                      # whether to enable this authentication method.
       adminGroup: ""                      # if set, users in this group will be granted admin privileges
       userGroups:                         # if set, only users in these groups are allowed to log in. Blocks all other users even with valid credentials.
+      groupPermissions: ""                # if set, permissions are recomputed on every login as userDefaults plus the grants of the user's groups, so permission management lives with the identity provider.
       groupsClaim: ""                     # the JSON field name to read groups from. Default is "groups"
       userIdentifier: ""                  # the field value to use as the username. Default is "preferred_username" in oidc, "sub" in jwt. Other common values are "email" or "username", or "phone"
       disableVerifyTLS: false             # disable TLS verification (insecure, for testing only)

@@ -171,3 +171,40 @@ func ApplyUserDefaults(u *users.User) {
 
 	u.Version = users.CurrentUserMigrationVersion
 }
+
+// EffectiveDefaultPermissions returns the users.Permissions that ApplyUserDefaults
+// would stamp on a new user (account.permissions, with download defaulting to true).
+func EffectiveDefaultPermissions() users.Permissions {
+	d := Config.UserDefaults
+	return users.Permissions{
+		Api:      d.Account.Permissions.Api,
+		Admin:    d.Account.Permissions.Admin,
+		Modify:   d.Account.Permissions.Modify,
+		Share:    d.Account.Permissions.Share,
+		Realtime: d.Account.Permissions.Realtime,
+		Delete:   d.Account.Permissions.Delete,
+		Create:   d.Account.Permissions.Create,
+		Download: boolValueOrDefault(d.Account.Permissions.Download, true),
+	}
+}
+
+// PermissionsFromGroups returns base with the grants of every group the user is
+// a member of OR'd in. Callers recompute this on each login, so removing a user
+// from a group also revokes the permissions that group granted (base is the floor).
+func PermissionsFromGroups(base users.Permissions, groupPerms map[string]users.Permissions, groups []string) users.Permissions {
+	for _, g := range groups {
+		gp, ok := groupPerms[g]
+		if !ok {
+			continue
+		}
+		base.Api = base.Api || gp.Api
+		base.Admin = base.Admin || gp.Admin
+		base.Modify = base.Modify || gp.Modify
+		base.Share = base.Share || gp.Share
+		base.Realtime = base.Realtime || gp.Realtime
+		base.Delete = base.Delete || gp.Delete
+		base.Create = base.Create || gp.Create
+		base.Download = base.Download || gp.Download
+	}
+	return base
+}
