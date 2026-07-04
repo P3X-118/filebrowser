@@ -265,3 +265,5 @@ integrations:
 http:
   trustedHeaders:                         # list of headers to trust, useful when behind a reverse proxy.
   disableRateLimit: false                 # turns off built-in auth route rate limiting and failed-login lockout (default false).
+access:
+  rules:

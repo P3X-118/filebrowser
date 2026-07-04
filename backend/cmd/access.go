@@ -10,6 +10,48 @@ import (
 	"github.com/gtsteffaniak/go-logger/logger"
 )
 
+// applyConfigAccessRules applies the declarative access rules from the config.
+// The config authoritatively owns the rules at the paths it declares; rules
+// created elsewhere (e.g. the admin UI) at other paths are left alone. A bad
+// declaration fails startup: silently skipping an access rule would leave a
+// path more open than the config states.
+func applyConfigAccessRules() {
+	if store.Access == nil || len(settings.Config.Access.Rules) == 0 {
+		return
+	}
+	defaultSource := ""
+	if len(settings.Config.Server.Sources) > 0 {
+		defaultSource = settings.Config.Server.Sources[0].Path
+	}
+	for _, r := range settings.Config.Access.Rules {
+		sourcePath := defaultSource
+		if r.Source != "" {
+			sourcePath = ""
+			for _, src := range settings.Config.Server.Sources {
+				if r.Source == src.Path || r.Source == src.Name {
+					sourcePath = src.Path
+					break
+				}
+			}
+			if sourcePath == "" {
+				logger.Fatalf("access rule for path %q references unknown source %q", r.Path, r.Source)
+			}
+		}
+		if sourcePath == "" {
+			logger.Fatalf("access rule for path %q: no source configured", r.Path)
+		}
+		indexPath := r.Path
+		if !strings.HasPrefix(indexPath, "/") {
+			indexPath = "/" + indexPath
+		}
+		if err := store.Access.SetRule(sourcePath, indexPath, r.DenyAll, r.AllowUsers, r.AllowGroups, r.DenyUsers, r.DenyGroups); err != nil {
+			logger.Fatalf("failed to apply access rule for source %q path %q: %v", sourcePath, indexPath, err)
+		}
+		logger.Infof("Applied config access rule: source=%s path=%s denyAll=%v allow(users=%v groups=%v) deny(users=%v groups=%v)",
+			sourcePath, indexPath, r.DenyAll, r.AllowUsers, r.AllowGroups, r.DenyUsers, r.DenyGroups)
+	}
+}
+
 // validateAccessRules migrates old-style access rules (without trailing slashes) to new format
 func validateAccessRules() {
 	if store.Access == nil {

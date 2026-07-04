@@ -21,6 +21,7 @@ type Settings struct {
 	UserDefaults UserDefaults `json:"userDefaults"`
 	Integrations Integrations `json:"integrations"`
 	Http         Http         `json:"http"`
+	Access       AccessConfig `json:"access"`
 }
 type Http struct {
 	TrustedHeadersArray []string `json:"trustedHeaders"`   // list of headers to trust, useful when behind a reverse proxy.
@@ -28,6 +29,27 @@ type Http struct {
 
 	// internal map of trusted headers
 	TrustedHeaders map[string]bool `json:"-"`
+}
+
+// AccessConfig declares access rules in config. Rules are applied at startup:
+// the config authoritatively owns the rules at the paths it declares (an empty
+// declared rule clears the path's rule). Rules created elsewhere (e.g. the
+// admin UI) at other paths are left alone.
+type AccessConfig struct {
+	Rules []AccessRuleDef `json:"rules"`
+}
+
+// AccessRuleDef is one declarative rule for a path within a source. Referenced
+// groups are created if they don't exist yet; group membership syncs from the
+// identity provider as users log in.
+type AccessRuleDef struct {
+	Path        string   `json:"path" validate:"required"` // index path within the source (e.g. "/drills")
+	Source      string   `json:"source"`                   // source name or path; defaults to the first configured source
+	DenyAll     bool     `json:"denyAll"`                  // deny everyone except allow-listed users/groups
+	AllowUsers  []string `json:"allowUsers"`
+	AllowGroups []string `json:"allowGroups"`
+	DenyUsers   []string `json:"denyUsers"`
+	DenyGroups  []string `json:"denyGroups"`
 }
 
 type Environment struct {

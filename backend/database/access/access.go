@@ -300,6 +300,45 @@ func (s *Storage) AllowGroup(sourcePath, indexPath, groupname string) error {
 	return s.SaveToDB()
 }
 
+// SetRule replaces the rule at (sourcePath, indexPath) with the provided lists,
+// creating referenced groups that don't exist yet (their membership fills in as
+// users log in). An empty rule (no flag and no principals) removes the path's
+// rule entirely, so declarative callers can also clear rules they own.
+func (s *Storage) SetRule(sourcePath, indexPath string, denyAll bool, allowUsers, allowGroups, denyUsers, denyGroups []string) error {
+	if !denyAll && len(allowUsers)+len(allowGroups)+len(denyUsers)+len(denyGroups) == 0 {
+		s.RemoveRuleByPath(sourcePath, utils.AddTrailingSlashIfNotExists(indexPath))
+		return nil
+	}
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	for _, g := range allowGroups {
+		if _, ok := s.Groups[g]; !ok {
+			s.Groups[g] = make(StringSet)
+		}
+	}
+	for _, g := range denyGroups {
+		if _, ok := s.Groups[g]; !ok {
+			s.Groups[g] = make(StringSet)
+		}
+	}
+	rule := s.getOrCreateRuleNL(sourcePath, indexPath)
+	rule.DenyAll = denyAll
+	rule.Allow.Users = makeStringSet(allowUsers)
+	rule.Allow.Groups = makeStringSet(allowGroups)
+	rule.Deny.Users = makeStringSet(denyUsers)
+	rule.Deny.Groups = makeStringSet(denyGroups)
+	s.clearAllCaches()
+	return s.SaveToDB()
+}
+
+func makeStringSet(items []string) StringSet {
+	set := make(StringSet, len(items))
+	for _, item := range items {
+		set[item] = struct{}{}
+	}
+	return set
+}
+
 // DenyAll sets a rule to deny all access for a given source and index path.
 func (s *Storage) DenyAll(sourcePath, indexPath string) error {
 	s.mux.Lock()

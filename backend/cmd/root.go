@@ -144,6 +144,7 @@ func StartFilebrowser() {
 	validateUserInfo(!dbExists)
 	validateOfficeIntegration()
 	validateAccessRules()
+	applyConfigAccessRules()
 	validateShareInfo()
 	// Start the rootCMD in a goroutine
 	go func() {

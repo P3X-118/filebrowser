@@ -596,6 +596,43 @@ definitions:
         description: release year
         type: integer
     type: object
+  settings.AccessConfig:
+    properties:
+      rules:
+        items:
+          $ref: '#/definitions/settings.AccessRuleDef'
+        type: array
+    type: object
+  settings.AccessRuleDef:
+    properties:
+      allowGroups:
+        items:
+          type: string
+        type: array
+      allowUsers:
+        items:
+          type: string
+        type: array
+      denyAll:
+        description: deny everyone except allow-listed users/groups
+        type: boolean
+      denyGroups:
+        items:
+          type: string
+        type: array
+      denyUsers:
+        items:
+          type: string
+        type: array
+      path:
+        description: index path within the source (e.g. "/drills")
+        type: string
+      source:
+        description: source name or path; defaults to the first configured source
+        type: string
+    required:
+    - path
+    type: object
   settings.Auth:
     properties:
       adminPassword:
@@ -1265,6 +1302,8 @@ definitions:
     type: object
   settings.Settings:
     properties:
+      access:
+        $ref: '#/definitions/settings.AccessConfig'
       auth:
         $ref: '#/definitions/settings.Auth'
       frontend:

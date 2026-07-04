@@ -5555,6 +5555,61 @@ const docTemplate = `{
                 }
             }
         },
+        "settings.AccessConfig": {
+            "type": "object",
+            "properties": {
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/settings.AccessRuleDef"
+                    }
+                }
+            }
+        },
+        "settings.AccessRuleDef": {
+            "type": "object",
+            "required": [
+                "path"
+            ],
+            "properties": {
+                "allowGroups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allowUsers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "denyAll": {
+                    "description": "deny everyone except allow-listed users/groups",
+                    "type": "boolean"
+                },
+                "denyGroups": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "denyUsers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "path": {
+                    "description": "index path within the source (e.g. \"/drills\")",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "source name or path; defaults to the first configured source",
+                    "type": "string"
+                }
+            }
+        },
         "settings.Auth": {
             "type": "object",
             "properties": {
@@ -6397,6 +6452,9 @@ const docTemplate = `{
         "settings.Settings": {
             "type": "object",
             "properties": {
+                "access": {
+                    "$ref": "#/definitions/settings.AccessConfig"
+                },
                 "auth": {
                     "$ref": "#/definitions/settings.Auth"
                 },
