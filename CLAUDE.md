@@ -71,7 +71,8 @@ make build-docker-slim    # minimal image, no ffmpeg/mupdf
 | App source + image builds | this repo | active |
 | Sister role `filebrowser_quantum` | `~/sgc/ansible/roles/filebrowser-quantum-ar` (= `P3X-118/filebrowser-quantum-ar`, on `sgc-dev`) | released: `v1.0.3-2` on `sgc` |
 | Master playbook wiring | `~/sgc/SGC` (`requirements.yml`, `setup.yml`, `group_vars/mash_servers`, `docs/services/filebrowser-quantum.md`) | ACTIVE — role fetched at `v1.0.3-2` |
-| Live deployment | `files.primebaseball.pro` on host `primebaseball.pro` (host_vars there are the reference integration) | deployed `1.5.0-0` (image `p3x-118/filebrowser:1.5.0-0`, controller-built + docker-loaded) |
+| Live deployment (prime) | `files.primebaseball.pro` on host `primebaseball.pro` (dedicated Authentik; ipAllowList gate — reference for public-DNS + allowlist posture) | `1.5.0-2` |
+| Live deployment (sgc) | `files.sgc.ai`, alias `files.sgc.ai` on the prod box (shared Authentik via `auth.sgc.ai`, client `sgc-files`, groups `sgc-files-admins`/`sgc-files-editors`; mesh-only DNS gate — reference for the DNS-as-gate posture) | `1.5.0-2` |
 
 The role runs the image docker-in-systemd (MASH pattern, var prefix `filebrowser_quantum_`): read-only container, `--cap-drop=ALL`, `--user uid:gid`; mounts `<base>/cache → /home/filebrowser/cache`, `<base>/data → /home/filebrowser/data`, `<base>/files → /folder` (the single source); config rendered to `data/config.yaml`; **secrets (admin password, OIDC client secret, office JWT) go via the env file only, never the config file**. Config keys without dedicated role vars are set through `filebrowser_quantum_configuration_extension_yaml` (deep-merged into the rendered config). SGC's group_vars auto-wire Traefik labels and ONLYOFFICE integration when those services are enabled.
 
