@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 P3X-118's fork of **FileBrowser Quantum** (upstream `gtsteffaniak/filebrowser`): a single-binary web file manager — Go backend with the Vue 3 frontend embedded. This repo owns the full code lifecycle: track upstream, carry our patches, and **build Docker images locally** (upstream's CI/Docker Hub images are not relied on). The image is deployed by the sister ansible role `filebrowser_quantum` through the SGC playbook (see "Lifecycle" below).
 
+For the full deployment design — the three-layer lifecycle, the Authentik authority model, the security gates, and how the two live deployments differ — see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
 Repo rules:
 
 - `origin` = `git@github.com:P3X-118/filebrowser.git`; `upstream` = `https://github.com/gtsteffaniak/filebrowser.git` (fetch upstream, merge into `main` only).
